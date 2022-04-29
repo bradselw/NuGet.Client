@@ -203,9 +203,6 @@ namespace NuGet.PackageManagement.UI
         public async Task UpdateStateAsync(IProgress<IItemLoaderState> progress, CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
-
-            //progress?.Report(_state);
-
             SearchResultContextInfo searchResult = await _searchService.RefreshSearchAsync(cancellationToken);
             cancellationToken.ThrowIfCancellationRequested();
             await UpdateStateAndReportAsync(searchResult, progress, cancellationToken);
@@ -244,16 +241,15 @@ namespace NuGet.PackageManagement.UI
             }
 
             var state = new PackageFeedSearchState(searchResult);
-            bool hasStateChanged = HasStateChanged(newState: state);
+            bool reportProgress = progress != null && HasStateChanged(newState: state);
             _state = state;
-
-            if (hasStateChanged)
-                progress?.Report(state);
+            if (reportProgress)
+                progress.Report(_state);
         }
 
         private bool HasStateChanged(PackageFeedSearchState newState)
         {
-            return !PackageFeedSearchStateEqualityComparer.Instance.Equals(_state, newState);
+            return !_state.Equals(other: newState);
         }
 
         public void Reset()
@@ -397,55 +393,22 @@ namespace NuGet.PackageManagement.UI
             public int ItemsCount => _results?.PackageSearchItems.Count ?? 0;
 
             public IReadOnlyDictionary<string, LoadingStatus> SourceLoadingStatus => _results?.SourceLoadingStatus;
-        }
 
-        private class PackageFeedSearchStateEqualityComparer : IEqualityComparer<PackageFeedSearchState>
-        {
-            /// <summary>
-            /// Gets a static singleton for the <see cref="PackageFeedSearchStateEqualityComparer" /> class.
-            /// </summary>
-            public static readonly PackageFeedSearchStateEqualityComparer Instance;
-
-            static PackageFeedSearchStateEqualityComparer()
+            public bool Equals(IItemLoaderState other)
             {
-                Instance = new();
-            }
-
-            /// <summary>
-            /// Initializes a new instance of the <see cref="PackageFeedSearchStateEqualityComparer" /> class.
-            /// </summary>
-            private PackageFeedSearchStateEqualityComparer()
-            {
-            }
-
-            public bool Equals(PackageFeedSearchState x, PackageFeedSearchState y)
-            {
-                if (ReferenceEquals(x, y))
+                if (ReferenceEquals(this, other))
                     return true;
-
-                if (x.ItemsCount != y.ItemsCount)
+                if (ItemsCount != other.ItemsCount)
                     return false;
-
-                if (x.LoadingStatus != y.LoadingStatus)
+                if (LoadingStatus != other.LoadingStatus)
                     return false;
-
-                foreach (var kvp in x.SourceLoadingStatus)
+                foreach (var kvp in SourceLoadingStatus)
                 {
-                    if (kvp.Value != y.SourceLoadingStatus[kvp.Key])
+                    if (kvp.Value != other.SourceLoadingStatus[kvp.Key])
                         return false;
                 }
 
                 return true;
-            }
-
-            public int GetHashCode(PackageFeedSearchState obj)
-            {
-                var combiner = new HashCodeCombiner();
-                combiner.AddObject(obj.ItemsCount);
-                combiner.AddObject(obj.LoadingStatus);
-                combiner.AddDictionary(obj.SourceLoadingStatus);
-
-                return combiner.CombinedHash;
             }
         }
     }

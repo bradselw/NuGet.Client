@@ -9,7 +9,7 @@ using NuGet.VisualStudio.Internal.Contracts;
 
 namespace NuGet.PackageManagement.UI
 {
-    internal interface IItemLoaderState
+    internal interface IItemLoaderState : IEquatable<IItemLoaderState>
     {
         LoadingStatus LoadingStatus { get; }
         int ItemsCount { get; }

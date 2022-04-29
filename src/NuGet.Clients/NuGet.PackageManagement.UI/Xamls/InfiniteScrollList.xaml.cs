@@ -401,8 +401,10 @@ namespace NuGet.PackageManagement.UI
                 currentLoader.State.ItemsCount == 0)
             {
                 token.ThrowIfCancellationRequested();
-                await currentLoader.UpdateStateAsync(progress, token);
+                await currentLoader.UpdateStateAsync(progress: null, token);
             }
+
+            progress?.Report(currentLoader.State);
         }
 
         /// <summary>
